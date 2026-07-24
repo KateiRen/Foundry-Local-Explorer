@@ -25,7 +25,7 @@ This is considered a Proof of conecpt and is built on the Electron application f
 
 ```bash
 git clone <this-repo-url>
-cd "FL Studio"
+cd "Foundry-Local-Explorer"
 npm install
 ```
 
@@ -52,10 +52,10 @@ npm run format      # Prettier --write
 `npm run build` type-checks the project and produces an unpacked `electron-vite build` output in `out/`. The platform-specific commands below additionally package that output into an installable artifact via `electron-builder`, written to `dist/`:
 
 ```bash
-# Windows (produces an NSIS installer, e.g. dist/fl-studio-<version>-setup.exe)
+# Windows (produces an NSIS installer, e.g. dist/Foundry-Local-Explorer-<version>-setup.exe)
 npm run build:win
 
-# macOS (produces a .dmg, e.g. dist/fl-studio-<version>.dmg)
+# macOS (produces a .dmg, e.g. dist/Foundry-Local-Explorer-<version>.dmg)
 npm run build:mac
 
 # Linux (produces AppImage, snap, and deb packages in dist/)
@@ -69,8 +69,8 @@ Notes:
 
 ### 4. Install the built app
 
-- **Windows**: run the generated `dist/fl-studio-<version>-setup.exe`. It installs via NSIS and creates a desktop shortcut.
-- **macOS**: open the generated `dist/fl-studio-<version>.dmg` and drag `fl-studio.app` into `Applications`.
-- **Linux**: run the `.AppImage` directly (`chmod +x` first), or install the `.deb` (`sudo dpkg -i dist/fl-studio-<version>.deb`), or install the `.snap`.
+- **Windows**: run the generated `dist/Foundry-Local-Explorer-<version>-setup.exe`. It installs via NSIS and creates a desktop shortcut.
+- **macOS**: open the generated `dist/Foundry-Local-Explorer-<version>.dmg` and drag `Foundry-Local-Explorer.app` into `Applications`.
+- **Linux**: run the `.AppImage` directly (`chmod +x` first), or install the `.deb` (`sudo dpkg -i dist/Foundry-Local-Explorer-<version>.deb`), or install the `.snap`.
 
 In all cases, ensure Foundry Local itself is installed on the target machine before launching the app — the app talks to it via the SDK and won't function without it.
