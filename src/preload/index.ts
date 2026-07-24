@@ -4,26 +4,51 @@ import type {
   ChatSendRequest,
   DownloadProgressEvent,
   EpRegisterProgressEvent,
+  TranscribeFromBufferRequest,
   TranscribeChunkEvent,
   TranscribeSendRequest
 } from '@shared/types'
 
+function normalizeIpcError(error: unknown): Error {
+  let message = error instanceof Error ? error.message : String(error)
+  message = message.replace(/^Error invoking remote method '[^']+':\s*/i, '')
+
+  if (
+    message.includes(
+      'FoundryLocalCorePath not specified in configuration and could not auto-discover binaries'
+    )
+  ) {
+    message =
+      'Foundry Local native libraries are missing. Fix: 1) close the app, 2) run "npm install", 3) if it still fails run "npm rebuild foundry-local-sdk foundry-local-sdk-winml --foreground-scripts", 4) restart the app. If install/rebuild fails, use Node.js 22 LTS and retry.'
+  }
+
+  return new Error(message)
+}
+
+async function invokeIpc<T>(channel: string, ...args: unknown[]): Promise<T> {
+  try {
+    return (await ipcRenderer.invoke(channel, ...args)) as T
+  } catch (error) {
+    throw normalizeIpcError(error)
+  }
+}
+
 // Custom APIs for renderer
 const api = {
   foundry: {
-    listModels: () => ipcRenderer.invoke('foundry:listModels'),
-    discoverEps: () => ipcRenderer.invoke('foundry:discoverEps'),
-    registerEps: (names?: string[]) => ipcRenderer.invoke('foundry:registerEps', names),
+    listModels: () => invokeIpc('foundry:listModels'),
+    discoverEps: () => invokeIpc('foundry:discoverEps'),
+    registerEps: (names?: string[]) => invokeIpc('foundry:registerEps', names),
     cancelRegisterEps: (names?: string[]) =>
-      ipcRenderer.invoke('foundry:cancelRegisterEps', names),
-    downloadModel: (modelId: string) => ipcRenderer.invoke('foundry:downloadModel', modelId),
-    cancelDownload: (modelId: string) => ipcRenderer.invoke('foundry:cancelDownload', modelId),
-    loadModel: (modelId: string) => ipcRenderer.invoke('foundry:loadModel', modelId),
-    unloadModel: (modelId: string) => ipcRenderer.invoke('foundry:unloadModel', modelId),
-    deleteModel: (modelId: string) => ipcRenderer.invoke('foundry:deleteModel', modelId),
-    startServer: () => ipcRenderer.invoke('foundry:startServer'),
-    stopServer: () => ipcRenderer.invoke('foundry:stopServer'),
-    serverStatus: () => ipcRenderer.invoke('foundry:serverStatus'),
+      invokeIpc('foundry:cancelRegisterEps', names),
+    downloadModel: (modelId: string) => invokeIpc('foundry:downloadModel', modelId),
+    cancelDownload: (modelId: string) => invokeIpc('foundry:cancelDownload', modelId),
+    loadModel: (modelId: string) => invokeIpc('foundry:loadModel', modelId),
+    unloadModel: (modelId: string) => invokeIpc('foundry:unloadModel', modelId),
+    deleteModel: (modelId: string) => invokeIpc('foundry:deleteModel', modelId),
+    startServer: () => invokeIpc('foundry:startServer'),
+    stopServer: () => invokeIpc('foundry:stopServer'),
+    serverStatus: () => invokeIpc('foundry:serverStatus'),
     onDownloadProgress: (callback: (event: DownloadProgressEvent) => void) => {
       const listener = (_e: unknown, data: DownloadProgressEvent): void => callback(data)
       ipcRenderer.on('foundry:downloadProgress', listener)
@@ -69,6 +94,8 @@ const api = {
   },
   audio: {
     transcribe: (request: TranscribeSendRequest) => ipcRenderer.invoke('audio:transcribe', request),
+    transcribeFromBuffer: (request: TranscribeFromBufferRequest) =>
+      ipcRenderer.invoke('audio:transcribeFromBuffer', request),
     stop: (requestId: string) => ipcRenderer.invoke('audio:stop', requestId),
     onChunk: (callback: (event: TranscribeChunkEvent) => void) => {
       const listener = (_e: unknown, data: TranscribeChunkEvent): void => callback(data)

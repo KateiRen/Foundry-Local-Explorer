@@ -11,6 +11,7 @@ import type {
   ModelSummary,
   ServerStatus,
   StoredMessage,
+  TranscribeFromBufferRequest,
   TranscribeChunkEvent,
   TranscribeSendRequest
 } from '@shared/types'
@@ -60,6 +61,7 @@ export interface FlStudioApi {
   }
   audio: {
     transcribe: (request: TranscribeSendRequest) => Promise<{ ok: true; text: string }>
+    transcribeFromBuffer: (request: TranscribeFromBufferRequest) => Promise<{ ok: true; text: string }>
     stop: (requestId: string) => Promise<{ ok: true }>
     onChunk: (callback: (event: TranscribeChunkEvent) => void) => () => void
   }

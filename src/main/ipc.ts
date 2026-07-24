@@ -1,4 +1,7 @@
 import { ipcMain, BrowserWindow } from 'electron'
+import { promises as fs } from 'fs'
+import os from 'os'
+import path from 'path'
 import * as foundry from './foundry'
 import * as db from './db'
 import * as rag from './rag'
@@ -7,6 +10,7 @@ import type {
   DownloadProgressEvent,
   ChatChunkEvent,
   EpRegisterProgressEvent,
+  TranscribeFromBufferRequest,
   TranscribeSendRequest,
   TranscribeChunkEvent
 } from '@shared/types'
@@ -28,6 +32,12 @@ function contentToText(content: ChatSendRequest['messages'][number]['content']):
 /** True if a message's content includes an image part. */
 function hasImageContent(content: ChatSendRequest['messages'][number]['content']): boolean {
   return Array.isArray(content) && content.some((part) => part.type === 'image_url')
+}
+
+function safeAudioFileName(fileName: string): string {
+  const base = path.basename(fileName || 'microphone.webm')
+  const normalized = base.replace(/[^A-Za-z0-9._-]/g, '_')
+  return normalized || 'microphone.webm'
 }
 
 export function registerIpcHandlers(getWindow: () => BrowserWindow | null): void {
@@ -138,7 +148,7 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): void
             .join('\n\n---\n\n')
           const contextMessage = {
             role: 'system' as const,
-            content: `Use the following document excerpts to answer the user's next message. Rely only on this content when it's relevant; if it doesn't contain the answer, say so.\n\n${context}`
+            content: `Use the following document excerpts to answer the user's next message. These excerpts are the available document context. Answer directly from them when relevant, and do not include internal reasoning or meta commentary. If the excerpts do not contain the answer, say that briefly.\n\n${context}`
           }
           // Put the context message first, not just before the latest user turn:
           // many local SLMs apply a fixed system/user/assistant prompt template
@@ -146,6 +156,9 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): void
           // system message injected mid-history can be silently dropped from the
           // rendered prompt.
           promptMessages = [contextMessage, ...messages]
+        } else {
+          ragWarning =
+            'No document chunks were retrieved for this question. Try re-uploading the document and ensure an embedding model is selected.'
         }
       } catch (error) {
         // Retrieval failures shouldn't block the chat; continue without context,
@@ -229,6 +242,49 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): void
       throw error
     } finally {
       activeTranscriptions.delete(requestId)
+    }
+  })
+
+  ipcMain.handle('audio:transcribeFromBuffer', async (_event, request: TranscribeFromBufferRequest) => {
+    const { requestId, modelId, fileName, audioBytes } = request
+    if (!audioBytes || audioBytes.length === 0) {
+      throw new Error('Recorded microphone input was empty. Please record again.')
+    }
+
+    const tempName = `fl-studio-mic-${requestId}-${safeAudioFileName(fileName)}`
+    const tempFilePath = path.join(os.tmpdir(), tempName)
+
+    await fs.writeFile(tempFilePath, Buffer.from(audioBytes))
+
+    const controller = new AbortController()
+    activeTranscriptions.set(requestId, controller)
+    try {
+      const full = await foundry.transcribeAudio(
+        modelId,
+        tempFilePath,
+        (delta) => {
+          const payload: TranscribeChunkEvent = { requestId, delta, done: false }
+          send('audio:chunk', payload)
+        },
+        controller.signal
+      )
+      send('audio:chunk', {
+        requestId,
+        done: true,
+        stopped: controller.signal.aborted
+      } satisfies TranscribeChunkEvent)
+      return { ok: true, text: full }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      send('audio:chunk', { requestId, done: true, error: message } satisfies TranscribeChunkEvent)
+      throw error
+    } finally {
+      activeTranscriptions.delete(requestId)
+      try {
+        await fs.rm(tempFilePath, { force: true })
+      } catch {
+        // Ignore temp cleanup errors.
+      }
     }
   })
 

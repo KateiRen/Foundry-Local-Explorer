@@ -136,6 +136,14 @@ export interface TranscribeSendRequest {
   filePath: string
 }
 
+export interface TranscribeFromBufferRequest {
+  requestId: string
+  modelId: string
+  fileName: string
+  mimeType: string
+  audioBytes: Uint8Array
+}
+
 export interface TranscribeChunkEvent {
   requestId: string
   delta?: string

@@ -3,6 +3,7 @@ import type { EpStatus } from '@shared/types'
 interface Props {
   eps: EpStatus[]
   loading: boolean
+  registrationWarning: string | null
 }
 
 const DEVICE_HINTS: Record<string, string> = {
@@ -15,15 +16,16 @@ const DEVICE_HINTS: Record<string, string> = {
   CPUExecutionProvider: 'CPU'
 }
 
-function HardwarePanel({ eps, loading }: Props): React.JSX.Element {
+function HardwarePanel({ eps, loading, registrationWarning }: Props): React.JSX.Element {
   return (
     <div className="hardware-panel">
       <h3 className="hardware-panel-title">Hardware acceleration</h3>
       {loading && <p className="muted">Detecting execution providers…</p>}
+      {!loading && registrationWarning && <p className="ep-warning">{registrationWarning}</p>}
       {!loading && eps.length === 0 && <p className="muted">No execution providers detected.</p>}
       <ul className="ep-list">
-        {eps.map((ep) => (
-          <li key={ep.name} className={ep.isRegistered ? 'ep-registered' : 'ep-available'}>
+        {eps.map((ep, idx) => (
+          <li key={`${ep.name}-${idx}`} className={ep.isRegistered ? 'ep-registered' : 'ep-available'}>
             <div className="ep-row">
               <span className={`status-dot ${ep.isRegistered ? 'on' : 'off'}`} />
               <span className="ep-name">{ep.name}</span>

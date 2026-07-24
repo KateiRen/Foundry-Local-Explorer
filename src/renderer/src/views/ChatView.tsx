@@ -95,6 +95,12 @@ function ChatView(): React.JSX.Element {
 
   async function handleSend(): Promise<void> {
     if (!input.trim() || !selectedModelId || isStreaming) return
+
+    if (documents.length > 0 && !embedModelId) {
+      setError('Select an embedding model before asking questions about uploaded documents.')
+      return
+    }
+
     setError(null)
     const text = input.trim()
     setInput('')
@@ -235,17 +241,6 @@ function ChatView(): React.JSX.Element {
 
         {error && <div className="error-banner">{error}</div>}
 
-        {documents.length > 0 && (
-          <div className="document-chips">
-            {documents.map((d) => (
-              <span key={d.documentId} className="document-chip">
-                📄 {d.documentName} ({d.chunkCount})
-                <button onClick={() => handleRemoveDocument(d.documentId)}>✕</button>
-              </span>
-            ))}
-          </div>
-        )}
-
         <div
           className={`chat-dropzone ${isDragOver ? 'drag-over' : ''}`}
           onDragOver={(e) => {
@@ -260,6 +255,17 @@ function ChatView(): React.JSX.Element {
             aren’t supported — the local model can’t see images.
           </span>
         </div>
+
+        {documents.length > 0 && (
+          <div className="document-chips">
+            {documents.map((d) => (
+              <span key={d.documentId} className="document-chip">
+                📄 {d.documentName} ({d.chunkCount})
+                <button onClick={() => handleRemoveDocument(d.documentId)}>✕</button>
+              </span>
+            ))}
+          </div>
+        )}
 
         <div ref={scrollRef} className="chat-messages">
           {messages.length === 0 && !isStreaming && (

@@ -12,7 +12,7 @@ This is considered a Proof of conecpt and is built on the Electron application f
 
 - **OS**: Windows, macOS, or Linux (the app's hardware/EP detection is powered by the `foundry-local-sdk`, which is cross-platform).
 - **Node.js**: 20.x LTS or later, with a matching **npm** (bundled with Node).
-- **Foundry Local**: must be [installed](https://learn.microsoft.com/azure/ai-foundry/foundry-local/get-started) on the machine — this app is a GUI on top of it, not a replacement for it. The Foundry Local service is started on demand by the SDK; you don't need to run `foundry` manually first.
+- **Foundry Local SDK runtime**: provided through npm dependencies (`foundry-local-sdk` / `foundry-local-sdk-winml`) during install. The `foundry` CLI is optional for this app; EP discovery/registration works through the SDK directly.
 - **Build tools for native modules**: this project depends on `better-sqlite3`, which compiles a native Node addon on install. Make sure you have the platform's native build toolchain available before `npm install`:
   - **Windows**: [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/) (Desktop development with C++ workload) or `npm install --global windows-build-tools` equivalent, plus Python 3.
   - **macOS**: Xcode Command Line Tools (`xcode-select --install`).
@@ -73,4 +73,33 @@ Notes:
 - **macOS**: open the generated `dist/Foundry-Local-Explorer-<version>.dmg` and drag `Foundry-Local-Explorer.app` into `Applications`.
 - **Linux**: run the `.AppImage` directly (`chmod +x` first), or install the `.deb` (`sudo dpkg -i dist/Foundry-Local-Explorer-<version>.deb`), or install the `.snap`.
 
-In all cases, ensure Foundry Local itself is installed on the target machine before launching the app — the app talks to it via the SDK and won't function without it.
+In all cases, ensure npm dependencies are installed on the target machine before launching the app — this app talks to Foundry through the bundled SDK runtime dependencies.
+
+## Troubleshooting: Missing Foundry Native Libraries
+
+If you see this error:
+
+```
+FoundryLocalCorePath not specified in configuration and could not auto-discover binaries
+```
+
+the Foundry native binaries were not downloaded into `node_modules`.
+
+Use this recovery flow from the project root:
+
+```bash
+# 1) Ensure a supported Node version
+node -v
+
+# 2) Install dependencies (runs Foundry install scripts)
+npm install
+
+# 3) If the error persists, force Foundry native reinstall
+npm rebuild foundry-local-sdk foundry-local-sdk-winml --foreground-scripts
+```
+
+Then fully restart the Electron app (`npm run dev`).
+
+Notes:
+- Prefer **Node.js 22 LTS** for this project.
+- On Git Bash, run the commands exactly as shown above (avoid shell history expansion issues in ad-hoc one-liners).
