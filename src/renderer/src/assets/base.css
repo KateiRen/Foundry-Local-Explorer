@@ -37,6 +37,28 @@
   box-sizing: border-box;
   margin: 0;
   font-weight: normal;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ev-c-gray-2) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--ev-c-gray-2);
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--ev-c-gray-1);
 }
 
 ul {

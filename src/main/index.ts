@@ -1,7 +1,7 @@
 import { app, shell, BrowserWindow } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import icon from '../../resources/icon.png?asset'
+import icon from '../../resources/AppIcon.png?asset'
 import { registerIpcHandlers } from './ipc'
 
 let mainWindow: BrowserWindow | null = null
@@ -14,7 +14,7 @@ function createWindow(): void {
     height: 800,
     show: false,
     autoHideMenuBar: true,
-    ...(process.platform === 'linux' ? { icon } : {}),
+    icon,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: true,
@@ -51,6 +51,10 @@ function createWindow(): void {
 app.whenReady().then(() => {
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.flstudio.app')
+
+  if (process.platform === 'darwin') {
+    app.dock?.setIcon(icon)
+  }
 
   // Default open or close DevTools by F12 in development
   // and ignore CommandOrControl + R in production.

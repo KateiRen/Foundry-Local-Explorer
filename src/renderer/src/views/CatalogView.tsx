@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState, useCallback } from 'react'
 import type { DeviceType, EpStatus, ModelSummary } from '@shared/types'
 import ModelCard from '../components/ModelCard'
-import HardwarePanel from '../components/HardwarePanel'
 
-function CatalogView(): React.JSX.Element {
+interface Props {
+  eps: EpStatus[]
+}
+
+function CatalogView({ eps }: Props): React.JSX.Element {
   const [models, setModels] = useState<ModelSummary[]>([])
-  const [eps, setEps] = useState<EpStatus[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [progress, setProgress] = useState<Record<string, number>>({})
@@ -13,7 +15,6 @@ function CatalogView(): React.JSX.Element {
   const [deviceFilter, setDeviceFilter] = useState<DeviceType | 'ALL'>('ALL')
   const [taskFilter, setTaskFilter] = useState<string>('ALL')
   const [search, setSearch] = useState('')
-  const [epRegisterProgress, setEpRegisterProgress] = useState<Record<string, number>>({})
   const [loadingModelId, setLoadingModelId] = useState<string | null>(null)
 
   const refreshModels = useCallback(async () => {
@@ -21,33 +22,16 @@ function CatalogView(): React.JSX.Element {
     setModels(list)
   }, [])
 
-  const refreshEps = useCallback(async () => {
-    const epList = await window.api.foundry.discoverEps()
-    setEps(epList)
-  }, [])
-
   useEffect(() => {
     let mounted = true
     setLoading(true)
-    Promise.all([window.api.foundry.listModels(), window.api.foundry.discoverEps()])
-      .then(([modelList, epList]) => {
-        if (!mounted) return
-        setModels(modelList)
-        setEps(epList)
-        // The catalog only exposes device-specific model variants for EPs that
-        // have been registered in this process (CPU is the only exception, since
-        // it needs no registration). Auto-register every discovered EP on startup
-        // so the full catalog is visible right away, instead of requiring the
-        // user to manually click "Register" before those variants show up.
-        // Registration is a fast no-op for EPs already registered in a prior
-        // session (their redistributables are cached locally).
-        const unregistered = epList.filter((ep) => !ep.isRegistered).map((ep) => ep.name)
-        if (unregistered.length > 0) {
-          registerEpsAndRefresh(unregistered).catch(() => {})
-        }
+    refreshModels()
+      .catch((err) => {
+        if (mounted) setError(err instanceof Error ? err.message : String(err))
       })
-      .catch((err) => setError(err instanceof Error ? err.message : String(err)))
-      .finally(() => setLoading(false))
+      .finally(() => {
+        if (mounted) setLoading(false)
+      })
 
     const unsubscribe = window.api.foundry.onDownloadProgress(({ modelId, progress: p, error: err }) => {
       if (err) {
@@ -78,39 +62,13 @@ function CatalogView(): React.JSX.Element {
     }
   }, [refreshModels])
 
-  async function handleRegisterEp(name: string): Promise<void> {
-    return registerEpsAndRefresh([name])
-  }
-
-  async function registerEpsAndRefresh(names: string[]): Promise<void> {
-    setEpRegisterProgress((prev) => {
-      const next = { ...prev }
-      for (const name of names) next[name] = 0
-      return next
-    })
-    const unsubscribe = window.api.foundry.onEpRegisterProgress(({ epName, percent }) => {
-      setEpRegisterProgress((prev) => ({ ...prev, [epName]: percent }))
-    })
-    try {
-      const result = await window.api.foundry.registerEps(names)
-      if (result.failedEps.length > 0) {
-        setError(`Failed to register ${result.failedEps.join(', ')}: ${result.status}`)
-      }
-      // Registering an EP changes which device-specific model variants the catalog
-      // exposes (the SDK invalidates its own catalog cache on success), so the model
-      // list must be re-fetched too, not just the EP list.
-      await Promise.all([refreshEps(), refreshModels()])
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
-    } finally {
-      unsubscribe()
-      setEpRegisterProgress((prev) => {
-        const next = { ...prev }
-        for (const name of names) delete next[name]
-        return next
-      })
-    }
-  }
+  // Execution providers are discovered/registered by the app shell (surfaced in
+  // the sidebar's hardware panel). Registering an EP unlocks additional
+  // device-specific model variants in the catalog, so re-fetch models whenever
+  // the set of EPs changes.
+  useEffect(() => {
+    refreshModels().catch(() => {})
+  }, [eps, refreshModels])
 
   const registeredEps = useMemo(
     () => new Set(eps.filter((e) => e.isRegistered).map((e) => e.name)),
@@ -244,12 +202,6 @@ function CatalogView(): React.JSX.Element {
           )}
         </div>
       </div>
-      <HardwarePanel
-        eps={eps}
-        loading={loading}
-        registering={epRegisterProgress}
-        onRegister={handleRegisterEp}
-      />
     </div>
   )
 }

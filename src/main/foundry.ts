@@ -83,20 +83,6 @@ export async function listModels(): Promise<ModelSummary[]> {
       summaries.push(toSummary(variant, loadedIds))
     }
   }
-  // TEMP DIAGNOSTIC: log a breakdown by deviceType every time the catalog is
-  // listed, to track down why the GPU/NPU filter counts fluctuate. Remove once
-  // the root cause is found.
-  const tally: Record<string, number> = {}
-  for (const s of summaries) {
-    const key = s.deviceType ?? 'null'
-    tally[key] = (tally[key] ?? 0) + 1
-  }
-  console.log(`[listModels] ${new Date().toISOString()} total=${summaries.length}`, tally)
-  const nonCpu = summaries.filter((s) => s.deviceType !== 'CPU')
-  console.log(
-    `[listModels] non-CPU variants (${nonCpu.length}):`,
-    nonCpu.map((s) => `${s.alias} [${s.deviceType}/${s.executionProvider}] cached=${s.cached}`)
-  )
   return summaries
 }
 
