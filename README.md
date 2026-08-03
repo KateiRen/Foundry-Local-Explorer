@@ -100,6 +100,29 @@ npm rebuild foundry-local-sdk foundry-local-sdk-winml --foreground-scripts
 
 Then fully restart the Electron app (`npm run dev`).
 
+### nvm + env-var quick recovery
+
+If `npm install` / `npm rebuild` did not populate the native Foundry Core binaries, the following `nvm` flow is a reliable recovery path (we use Node 22 LTS for best compatibility):
+
+```bash
+# Use Node 22 LTS (via nvm)
+nvm install 22
+nvm use 22
+rm -rf node_modules package-lock.json
+npm install
+npm rebuild foundry-local-sdk foundry-local-sdk-winml --foreground-scripts
+```
+
+If installing/rebuilding still doesn't provide the core binary, either install the Foundry Local runtime system-wide or point the SDK at a local copy of the core binary:
+
+```bash
+# Example (adjust path to your system)
+export FOUNDRY_LOCAL_CORE_PATH=/path/to/Microsoft.AI.Foundry.Local.Core.so
+FOUNDRY_LOCAL_CORE_PATH=/path/to/Microsoft.AI.Foundry.Local.Core.so npm run dev
+```
+
+Note: the project's npm `name` used to be a spaced display name; the publishable package identifier is now `foundry-local-explorer`. The app's product/display name remains `Foundry Local Explorer`.
+
 Notes:
 - Prefer **Node.js 22 LTS** for this project.
 - On Git Bash, run the commands exactly as shown above (avoid shell history expansion issues in ad-hoc one-liners).
