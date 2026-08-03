@@ -1,4 +1,4 @@
-# FL Studio
+# Foundry Local Explorer
 
 This was an afternoon of vibe coding for curiosity. Is it possible to create a simple, modern and user friendly GUI around Microsoft Foundry Local to make it accessible not only in a developer setups and shipped applications, but let it stand as its own application? The idea was to make it 
 - visually browse the model catalogue
