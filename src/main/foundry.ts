@@ -1,4 +1,5 @@
 import { FoundryLocalManager } from 'foundry-local-sdk'
+import type { FoundryLocalConfig } from 'foundry-local-sdk/dist/configuration.js'
 import type { IModel } from 'foundry-local-sdk'
 import type {
   ChatMessage,
@@ -34,10 +35,10 @@ async function getManager(): Promise<FoundryLocalManager> {
     // when the package install does not provide the Microsoft.AI.Foundry.Local.Core
     // binary (common when the NuGet artifact lacks a linux-x64 RID).
     const envCorePath = process.env.FOUNDRY_LOCAL_CORE_PATH ?? process.env.FOUNDRY_LOCAL_CORE
-    const cfg = envCorePath
-      ? { appName: 'Foundry Local Explorer', logLevel: 'warn', params: { FoundryLocalCorePath: envCorePath } }
+    const cfg: FoundryLocalConfig = envCorePath
+      ? { appName: 'Foundry Local Explorer', logLevel: 'warn', libraryPath: envCorePath }
       : { appName: 'Foundry Local Explorer', logLevel: 'warn' }
-    managerPromise = FoundryLocalManager.createAsync(cfg as any)
+    managerPromise = FoundryLocalManager.createAsync(cfg)
   }
   return managerPromise
 }
