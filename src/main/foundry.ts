@@ -34,12 +34,10 @@ async function getManager(): Promise<FoundryLocalManager> {
     // when the package install does not provide the Microsoft.AI.Foundry.Local.Core
     // binary (common when the NuGet artifact lacks a linux-x64 RID).
     const envCorePath = process.env.FOUNDRY_LOCAL_CORE_PATH ?? process.env.FOUNDRY_LOCAL_CORE
-    const cfg: Record<string, unknown> = {
-      appName: 'FL Studio',
-      logLevel: 'warn'
-    }
-    if (envCorePath) cfg['params'] = { FoundryLocalCorePath: envCorePath }
-    managerPromise = FoundryLocalManager.createAsync(cfg)
+    const cfg = envCorePath
+      ? { appName: 'Foundry Local Explorer', logLevel: 'warn', params: { FoundryLocalCorePath: envCorePath } }
+      : { appName: 'Foundry Local Explorer', logLevel: 'warn' }
+    managerPromise = FoundryLocalManager.createAsync(cfg as any)
   }
   return managerPromise
 }
