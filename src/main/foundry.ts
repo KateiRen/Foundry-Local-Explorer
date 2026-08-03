@@ -29,10 +29,17 @@ const audioClientCache = new Map<string, ReturnType<IModel['createAudioClient']>
 
 async function getManager(): Promise<FoundryLocalManager> {
   if (!managerPromise) {
-    managerPromise = FoundryLocalManager.createAsync({
+    // Allow overriding the native Foundry Local Core path via environment
+    // variable so users can point the SDK at a system-installed core
+    // when the package install does not provide the Microsoft.AI.Foundry.Local.Core
+    // binary (common when the NuGet artifact lacks a linux-x64 RID).
+    const envCorePath = process.env.FOUNDRY_LOCAL_CORE_PATH ?? process.env.FOUNDRY_LOCAL_CORE
+    const cfg: Record<string, unknown> = {
       appName: 'FL Studio',
       logLevel: 'warn'
-    })
+    }
+    if (envCorePath) cfg['params'] = { FoundryLocalCorePath: envCorePath }
+    managerPromise = FoundryLocalManager.createAsync(cfg)
   }
   return managerPromise
 }

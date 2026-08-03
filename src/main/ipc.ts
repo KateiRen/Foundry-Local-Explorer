@@ -251,7 +251,7 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): void
       throw new Error('Recorded microphone input was empty. Please record again.')
     }
 
-    const tempName = `fl-studio-mic-${requestId}-${safeAudioFileName(fileName)}`
+    const tempName = `Foundry Local Explorer-mic-${requestId}-${safeAudioFileName(fileName)}`
     const tempFilePath = path.join(os.tmpdir(), tempName)
 
     await fs.writeFile(tempFilePath, Buffer.from(audioBytes))

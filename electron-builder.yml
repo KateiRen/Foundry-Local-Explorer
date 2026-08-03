@@ -1,5 +1,5 @@
 appId: com.electron.app
-productName: fl-studio
+productName: Foundry Local Explorer
 directories:
   buildResources: build
 files:
@@ -12,7 +12,7 @@ files:
 asarUnpack:
   - resources/**
 win:
-  executableName: fl-studio
+  executableName: Foundry Local Explorer
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
