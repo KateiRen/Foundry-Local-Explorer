@@ -24,7 +24,7 @@ This is considered a Proof of conecpt and is built on the Electron application f
 ### 1. Clone and install dependencies
 
 ```bash
-git clone <this-repo-url>
+git clone https://github.com/KateiRen/Foundry-Local-Explorer
 cd "Foundry-Local-Explorer"
 npm install
 ```
